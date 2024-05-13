@@ -1,0 +1,63 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+library(ggplot2)
+library(readr)
+library(readr)
+I <- read_csv("C:/Users/Erick Pc/Documents/RNA bioinformatics/I.csv")
+View(I)
+# A continuación se muestran los valores de expresión. El caso trata de tratamiento con un fármaco y se desean ver los cambios de expresión de p53 y el gen control GAPDH dados por valor Ct, es decir un experimento de RT-qPCR. Para ello, se hará uso del método delta-delta para hallar la variabilidad de la expresión génica.
+I
+```
+```{r}
+# Se realiza lectura de la tabla y se renombran las columnas para facilidad de cálculo, se resta el valor Ct del gen con el del housekeeper (GAPDH)
+df.0 = read.table("C:/Users/Erick Pc/Documents/RNA bioinformatics/I.csv", header = TRUE, sep=',')
+colnames(df.0) <- c("No.","nt.p53", "nt.GAPDH", "t.p53", "t.GAPDH")
+delta.CT.test= df.0$nt.p53 - df.0$nt.GAPDH
+delta.CT.control=  df.0$t.p53 - df.0$t.GAPDH
+promedio.control = mean(delta.CT.control)
+
+```
+```{r}
+# Se resta el delta Ct de cada variable con el delta Ct promedio del control
+delta.CT2.test= delta.CT.test - promedio.control
+delta.CT2.control = delta.CT.control - promedio.control
+# Se crea data frame 1 para visualizar los primeros datos
+df.0.1 <- data.frame(delta.CT2.control, delta.CT2.test, row.names = NULL)
+# Se calcula la expresión
+expresion.1.test <- 2^(-delta.CT2.test)
+expresion.1.control <- 2^(-delta.CT2.control)
+d.f.0.3 <- data.frame(expresion.1.control, expresion.1.test, row.names = NULL)
+promedios <- c(mean(expresion.1.control), mean(expresion.1.test))
+sd.totales <- c(sd(expresion.1.control) ,sd(expresion.1.test))
+df.0.2 <- data.frame(promedios, sd.totales)
+  plot <- ggplot(data=df.0.2, aes(x=sd.totales, y=promedios))+geom_bar(stat='identity')+  geom_errorbar(aes(ymin=promedios-sd.totales, ymax=promedios+sd.totales))
+  plot
+  # Se realiza prueba t para obtener el valor P de threshold P < 0.05, es posible visualizar en este caso que la expresión no tiene valores estadísticamente significativos, por tanto el tratamiento del fármaco no afecta la expresión de p53 relativa a GAPDH
+  t.test(x=expresion.1.control, expresion.1.test)
+```
+
+
+```{r}
+error.bar = function(x, y, upper, lower=upper, length=0.1,...) { 
+    if(length(x) != length(y) | length(y) !=length(lower) | length(lower) != length(upper)) stop("vectors must be same length")     
+    arrows(x,y+upper, x, y-lower, angle=90, code=3, length=length, ...)}
+```
+
+```{r}
+## Creación de un vector que posee 3 valores de expresión relativa
+#  In a real world we would calculate this as an average expression per condition
+expresion = c(1,2,8)
+ 
+## Creación de un vector que posee 3 valores de variabilidad de la expresión
+variabilidad = c(0.5,0.5,0.5)
+ 
+## Acá se crea el vector que nomencla y provee las condiciones de prueba de la función barras de error para graficarlas
+genes = c('Gen 1','Gen 2','Gen 3')
+ 
+## Acá se realiza la graficación en barras con las barras de error
+bar = barplot(height=expresion,names.arg=genes)
+error.bar(x=bar,y=expresion,upper=variabilidad)
+```

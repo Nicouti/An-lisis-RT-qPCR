@@ -1,0 +1,53 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+
+# Al visualizar que hubo una interrupción por el vehículo usado para transportar el fármaco, se decide usar PBS como el nuevo vehículo y se volvieron a realizar medidas de expresión. Esta vez también se añade de control positivo un fármaco que se sabe es supresor de tumores y por ende debe tener un efecto en la expresión de p27 por lo demostrado en la literatura.
+IV <- read_csv("RNA bioinformatics/IV.csv")
+```
+
+```{r}
+df.0 = read.table("C:/Users/Erick Pc/Documents/RNA bioinformatics/IV.csv", header = TRUE, sep=',')
+colnames(df.0) <- c("No.","nt.p27", "nt.GAPDH", "nc.p27","nc.GAPDH","pc.p27", "pc.GAPDH", "t.p27", "t.GAPDH")
+delta.CT.test <- df.0$t.p27 - df.0$t.GAPDH
+delta.CT.control <- df.0$nt.p27 - df.0$nt.GAPDH
+delta.CT.nc <- df.0$nc.p27 - df.0$nc.GAPDH
+delta.CT.pc <- df.0$pc.p27 - df.0$pc.GAPDH
+promedio.control <- mean(delta.CT.control)
+```
+```{r}
+# Esto es lo mismo pero se añade el control positivo al análisis 
+dd.CT.test <- delta.CT.test - promedio.control
+dd.CT.control <- delta.CT.control - promedio.control
+dd.CT.nc <- delta.CT.nc - promedio.control
+dd.CT.pc <- delta.CT.pc - promedio.control
+df.0.1 <- data.frame (dd.CT.pc, dd.CT.nc, dd.CT.control, dd.CT.test)
+expresion.test <- 2^(-dd.CT.test)
+expresion.control <- 2^(-dd.CT.control)
+expresion.nc <- 2^(-dd.CT.nc)
+expresion.pc <- 2^(-dd.CT.pc)
+
+promedios <- c(mean(expresion.pc), mean(expresion.nc), mean(expresion.control), mean(expresion.test))
+desviaciones<- c(sd(expresion.pc), sd(expresion.nc), sd(expresion.control), sd(expresion.test))
+df.0.2 <- data.frame (desviaciones, promedios, labels = c("Control positivo", "Control negativo", "No tratadas", "Tratadas"))
+bplot <- ggplot(data=df.0.2, aes(x=labels, y=promedios))+geom_bar(stat='identity') + geom_errorbar(aes(ymin=promedios-desviaciones, ymax=promedios+desviaciones))
+bplot
+```
+```{r}
+expresion <- c(expresion.pc, expresion.nc, expresion.control, expresion.test)
+condicion <- c(rep("Control positivo", 10), rep("Control negativo", 10), rep("Sin tratar", 10), rep("Tratadas", 10))
+df.0.3 <- as.data.frame(t(rbind(condicion, expresion)))
+df.0.3$expresion  <- as.numeric(df.0.3$expresion)
+
+summary(aov(formula=expresion ~ condicion, data = df.0.3))
+see=pairwise.t.test(expresion, condicion,
+    p.adjust.method = "fdr", data=df.0.5
+    )
+see$p.value
+# Finalmente es posible visualizar por el gráfico y por t test que no hay valores significativos entre las células tratadas y sin tratar con respecto al control negativo, lo cual quiere decir que la expresión de p27 no se ve influenciada por el tratamiento con el fármaco ni con el vehículo, lo cual sí se puede evidenciar con el control positivo. Además, el control positivo provee valores de sinificancia estadística con los dos casos de tratamiento, lo cual quiere decir que el fármaco no produce un efecto similar o parecido al control positivo, siendo así que el fármaco y vehículo no producen ningún efecto anti-cancerígeno sobre las líneas celulares probadas, al menos en la expresión de p27 lo que respecta. Por otro lado, el tratamiento con y sin fármaco tampoco provee resultados de expresión significativos, lo cual quiere decir que p27 no se ve cambiado por efecto del fármaco probado en el experimento, algo que sí se evidencia con el control positivo.
+```
+

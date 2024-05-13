@@ -1,0 +1,61 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+
+# Al visualizar el experimento con p27 es posible visualizar que carece de un control negativo, dado que la expresión de p27 podría verse afectada por el vehículo que transporta el fármaco. Por tanto, es necesario realizar un nuevo experimento donde se use el vehículo con fármaco y sin fármaco, evaluando las expresiones de p27 en los dos casos para descartar la hipótesis de que sea el vehículo el cual está produciendo el efecto de desregulación de p27.
+library(readr)
+III <- read_csv("RNA bioinformatics/III.csv")
+
+```
+```{r}
+df.0 = read.table("C:/Users/Erick Pc/Documents/RNA bioinformatics/III.csv", header = TRUE, sep=',')
+colnames(df.0) <- c("No.","nt.p27", "nt.GAPDH", "nc.p27","nc.GAPDH", "t.p27", "t.GAPDH")
+delta.CT.test <- df.0$t.p27 - df.0$t.GAPDH
+delta.CT.control <- df.0$nt.p27 - df.0$nt.GAPDH
+promedio.control <- mean(delta.CT.control)
+```
+```{r}
+dd.CT.test <- delta.CT.test - promedio.control
+dd.CT.control <- delta.CT.control - promedio.control
+df.0.1 <- data.frame(dd.CT.control, dd.CT.test, row.names = NULL)
+expresion.test <- 2^(-dd.CT.test)
+expresion.control <- 2^(-dd.CT.control)
+promedios <- c(mean(expresion.control), mean(expresion.test))
+desviaciones <- c(sd(expresion.control), sd(expresion.test))
+df.0.2 <- data.frame(expresion.test, expresion.control, row.names = NULL)
+df.0.3 <- data.frame(desviaciones, promedios, labels = c("No Tratadas", "Tratadas"))
+bplot <- ggplot(data=df.0.3, aes(x=labels, y=promedios))+geom_bar(stat='identity') + geom_errorbar(aes(ymin=promedios-desviaciones, ymax=promedios+desviaciones))
+bplot
+```
+```{r}
+# Al parecer por el t test y el p valor obtenido sí hay cambio en la expresión cuando se comparan los valores de tratamiento de GAPDH y p27, pero ahora se evaluarán los controles negativos...
+delta.CT.nc <- df.0$nc.p27 - df.0$nc.GAPDH
+dd.CT.nc <- delta.CT.nc - promedio.control
+expresion.nc <- 2^(-dd.CT.nc)
+promedios <- c(mean(expresion.control), mean(expresion.test), mean(expresion.nc))
+desviaciones <- c(sd(expresion.control), sd(expresion.test), sd(expresion.nc))
+df.0.4 <- data.frame (desviaciones, promedios, labels = c("No Tratadas", "Tratadas", "Control negativo"))
+bplot <- ggplot(data=df.0.4, aes(x=labels, y=promedios))+geom_bar(stat='identity') + geom_errorbar(aes(ymin=promedios-desviaciones, ymax=promedios+desviaciones))
+bplot
+
+#Es posible visualizar de primera mano que hay diferencia entre los tratamientos, pero no entre el tratamiento y el control negativo, este ya es el primer indicio de que el vehículo tiene un efecto sobre la expresión y no el fármaco mismo. Lo cual quiere decir que el fármaco no tiene el efecto esperado.
+```
+```{r}
+# Se realizará la creación de un data frame que incluya los valores de expresión calculados por el método delta delta, estos datos se concatenarán con labels de repeticiones de 10 (porque n =10) con cada una de las condiciones manejadas y en el orden adecuado
+expresion <- c(expresion.control, expresion.nc, expresion.test)
+condicion <- c(rep("Sin tratar p27 expresión", 10), rep("Control negativo p27", 10), rep("tratadas p27", 10))
+df.0.5 <- as.data.frame(t(rbind(condicion, expresion)))
+df.0.5$expresion  <- as.numeric(df.0.5$expresion)
+#Luego se realiza un análisis de varianza ANOVA con la tabla creada y las condiciones creadas. Tener en cuenta que esto es un pairwise, es decir se realiza la comparación dos a dos con el t.test, por tanto es importante tener la condición como un "label" para interpretar adecuadamente los resultados obtenidos.
+summary(aov(formula=expresion ~ condicion, data = df.0.5))
+see=pairwise.t.test(expresion, condicion,
+    p.adjust.method = "fdr", data=df.0.5
+    )
+see$p.value
+# Se puede visualizar que el control negativo p27 respecto a las células tratadas no tiene significancia estadística por su p valor, esto quiere decir que el efecto de cambio de la expresión se debe al vehículo y no al fármaco.
+```
+

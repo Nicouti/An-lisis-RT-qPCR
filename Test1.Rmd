@@ -1,0 +1,49 @@
+---
+title: "Test1"
+output: html_document
+date: "2024-05-12"
+---
+
+```{r}
+error.bar = function(x, y, upper, lower=upper, length=0.1,...) { 
+    if(length(x) != length(y) | length(y) !=length(lower) | length(lower) != length(upper)) stop("vectors must be same length")     
+    arrows(x,y+upper, x, y-lower, angle=90, code=3, length=length, ...)}
+```
+
+```{r}
+## Creación de un vector que posee 3 valores de expresión relativa
+#  In a real world we would calculate this as an average expression per condition
+expresion = c(1,2,8)
+ 
+## Creación de un vector que posee 3 valores de variabilidad de la expresión
+variabilidad = c(0.5,0.5,0.5)
+ 
+## Acá se crea el vector que nomencla y provee las condiciones de prueba de la función barras de error para graficarlas
+genes = c('Gen 1','Gen 2','Gen 3')
+ 
+## Acá se realiza la graficación en barras con las barras de error
+bar = barplot(height=expresion,names.arg=genes)
+error.bar(x=bar,y=expresion,upper=variabilidad)
+```
+```{r}
+# Se define el data frame como primeradata, y la función rbind nos permite realizar la fusión de los dos vectores previamente definidos de las variables de expresión.
+primeradata <- rbind(expresion, variabilidad, deparse.level = 1)
+primeradata
+# Luego se realiza el data frame fusionando los vectores y nomenclando
+df1 = as.data.frame(primeradata, row.names = NULL, optional = FALSE, make.names = TRUE, col.names = names(primeradata))
+# Transposición de columnas y filas, por si hay mal coonfig.
+t(df1)
+# Renombramiento de las columnas con los genes de estudio
+colnames(df1) <- c("Gen 1", "Gen 2", "Gen 3")
+df1
+
+```
+```{r}
+aov(formula=expresion ~ genes, data = df1)
+pairwise.t.test(expresion, genes,
+    p.adjust.method = "fdr", data=df1
+    )
+
+```
+
+

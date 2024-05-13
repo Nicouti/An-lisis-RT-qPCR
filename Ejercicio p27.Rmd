@@ -1,0 +1,38 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+library(readr)
+
+# Dado que no hubo cambios de significancia estadística de p53, se decidió investigar la posible expresión de p27 como el factor que se envolvía en el tratamiento. Se usó de control GAPDH.
+library(readr)
+II <- read_csv("RNA bioinformatics/II.csv")
+
+```
+```{r}
+df.0 = read.table("C:/Users/Erick Pc/Documents/RNA bioinformatics/II.csv", header = TRUE, sep=',')
+colnames(df.0) <- c("No.","nt.p27", "nt.GAPDH", "t.p27", "t.GAPDH")
+delta.CT.test <- df.0$t.p27 - df.0$t.GAPDH
+delta.CT.control <- df.0$nt.p27 - df.0$nt.GAPDH
+promedio.control <- mean(delta.CT.control)
+```
+```{r}
+dd.CT.test <- delta.CT.test - promedio.control
+dd.CT.control <- delta.CT.control - promedio.control
+df.0.1 <- data.frame(dd.CT.control, dd.CT.test, row.names = NULL)
+df.0.1
+expresion.test <- 2^(-dd.CT.test)
+expresion.control <- 2^(-dd.CT.control)
+promedios <- c(mean(expresion.control), mean(expresion.test))
+desviaciones <- c(sd(expresion.control), sd(expresion.test))
+df.0.2 <- data.frame(expresion.test, expresion.control, row.names = NULL)
+df.0.2
+df.0.3 <- data.frame(desviaciones, promedios)
+bplot <- ggplot(data=df.0.3, aes(x=desviaciones, y=promedios))+geom_bar(stat='identity') + geom_errorbar(aes(ymin=promedios-desviaciones, ymax=promedios+desviaciones))
+bplot
+t.test(x=expresion.control, expresion.test)
+```
+
