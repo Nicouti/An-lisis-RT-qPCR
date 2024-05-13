@@ -1,2 +1,3 @@
 # An-lisis-RT-qPCR
 Análisis de datos de RT-qPCR, valores Ct mediante el método delta-delta
+Se sigue el estudio de caso de la expresión de genes que podría verse diferencialmente expresados al realizar un tratamiento con un fármaco. Para ello se usa el método delta-delta involucrando los valores Ct obtenidos de un experimento de RT-qPCR para obtener la expresión media de los genes y comparar mediante análisis estadístico ANOVA y t test con el fin de hallar resultados con significancia estadística que permiten dar conclusiones en los distintos experimentos relativos a los niveles de expresión para cada caso.
